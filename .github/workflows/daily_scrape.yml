@@ -6,6 +6,9 @@ on:
     - cron: '5 3 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: write   # ← 이게 핵심 (push 권한 부여)
+
 jobs:
   scrape:
     runs-on: ubuntu-latest
