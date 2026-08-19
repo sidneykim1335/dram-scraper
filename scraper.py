@@ -19,28 +19,41 @@ def scrape_dram():
         raise ValueError("DRAM Spot Price 테이블을 찾을 수 없습니다.")
 
     today = datetime.now().strftime("%Y-%m-%d")
-    data = []
+    today_data = {}
 
     for tr in tbody.find_all("tr")[1:]:
         tds = [td.get_text(strip=True) for td in tr.find_all("td")]
         if len(tds) >= 7:
-            data.append({
-                "Date": today,
-                "Item": tds[0],
-                "Session Average": tds[5],
-                "Change": tds[6]
-            })
+            item = tds[0]
+            average = tds[5]
+            today_data[item] = average
 
-    df = pd.DataFrame(data)
-
+    # 저장 경로
     save_dir = Path("data")
     save_dir.mkdir(exist_ok=True)
+    filename = save_dir / "DRAM_Spot.csv"
 
-    filename = save_dir / f"DRAM_Spot_{today}.csv"
-    df.to_csv(filename, index=False, encoding="utf-8-sig")
+    if filename.exists():
+        df = pd.read_csv(filename, index_col="Item")
+    else:
+        df = pd.DataFrame()
+
+    # 오늘 날짜 컬럼 추가/업데이트
+    for item, average in today_data.items():
+        df.loc[item, today] = average
+
+    # 인덱스 이름 설정
+    df.index.name = "Item"
+
+    # 날짜 컬럼 정렬
+    date_cols = sorted([col for col in df.columns if col != "Item"])
+    df = df[date_cols]
+
+    df.to_csv(filename, encoding="utf-8-sig")
 
     print(f"저장 완료 → {filename}")
-    print(df.to_string(index=False))
+    print(f"오늘 날짜: {today}")
+    print(df[[today]].to_string())
 
 
 if __name__ == "__main__":
